@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v2.7.0 | [`v2.7.0`](https://github.com/chainguard-actions/julia-actions-setup-julia/tree/v2.7.0) | [`4c0cb0f`](https://github.com/julia-actions/setup-julia/commit/4c0cb0fce8556fdb04a90347310e5db8b1f98fb9) |
+| v3.0.0 | [`v3.0.0`](https://github.com/chainguard-actions/julia-actions-setup-julia/tree/v3.0.0) | [`4a12c5f`](https://github.com/julia-actions/setup-julia/commit/4a12c5f801ca5ef0458bba44687563ef276522dd) |
 
 ## Privacy
 
