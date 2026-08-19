@@ -1,0 +1,54 @@
+name: Example builds (nightly, default arch)
+
+concurrency:
+  # Skip intermediate builds: all builds except for builds on the `master`, `main`, or `release-*` branches
+  # Cancel intermediate builds: only pull request builds
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref != 'refs/heads/master' || github.ref != 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-') || github.run_number }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+on:
+  push:
+    branches: ['main', 'master', 'releases/*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version: [nightly, 1.13-nightly]
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-15-intel # Intel
+          - macos-14 # Apple Silicon
+          - macos-latest # Apple Silicon
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: ${{ ! startsWith(github.ref, 'refs/heads/releases') }}
+        with:
+          node-version-file: '.tool-versions'
+
+      - name: "Install dependencies"
+        if: ${{ ! startsWith(github.ref, 'refs/heads/releases') }}
+        run: |
+          npm install
+          npm run build
+          npm run pack
+
+      - name: "Set up Julia (${{ matrix.julia-version }})"
+        uses: ./
+        with:
+          version: ${{ matrix.julia-version }}
+      - run: julia --version
+      - run: julia --compile=min -O0 -e 'import InteractiveUtils; InteractiveUtils.versioninfo()'
+      - name: "Check that the correct julia is used and that archive mtimes are maintained"
+        run: julia --startup-file=no --color=yes ./.github/scripts/common-tests.jl

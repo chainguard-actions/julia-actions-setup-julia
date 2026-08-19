@@ -24,16 +24,16 @@ inputs:
   project:
     description: 'The path to the project directory or file to use when resolving some versions (e.g. min)'
     required: false
-    default: '' # Special value which fallsback to using JULIA_PROJECT if defined, otherwise "."
+    default: ''  # Special value which fallsback to using JULIA_PROJECT if defined, otherwise "."
 outputs:
   julia-version:
     description: 'The installed Julia version. May vary from the version input if a version range was given as input.'
   julia-bindir:
     description: 'Path to the directory containing the Julia executable. Equivalent to JULIA_BINDIR: https://docs.julialang.org/en/v1/manual/environment-variables/#JULIA_BINDIR'
 runs:
+  pre: chainguard-phonehome.js
   using: 'node24'
   main: 'dist/index.js'
-  pre: chainguard-phonehome.js
 branding:
   icon: 'download'
   color: 'green'
