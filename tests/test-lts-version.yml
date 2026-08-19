@@ -1,0 +1,47 @@
+name: Test LTS version alias
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: setup
+        uses: .
+        with:
+          version: 'lts'
+      - name: Assert julia-version output is set
+        env:
+          JULIA_VERSION: ${{ steps.setup.outputs.julia-version }}
+        run: |
+          echo "julia-version: $JULIA_VERSION"
+          if [ -z "$JULIA_VERSION" ]; then
+            echo "FAIL: julia-version output is empty"
+            exit 1
+          fi
+          # LTS should resolve to a stable 1.x version
+          if ! echo "$JULIA_VERSION" | grep -qE '^1\.'; then
+            echo "FAIL: expected LTS to resolve to a 1.x version but got: $JULIA_VERSION"
+            exit 1
+          fi
+          echo "PASS: LTS resolved to julia-version=$JULIA_VERSION"
+      - name: Assert julia-bindir output is set
+        env:
+          JULIA_BINDIR: ${{ steps.setup.outputs.julia-bindir }}
+        run: |
+          echo "julia-bindir: $JULIA_BINDIR"
+          if [ -z "$JULIA_BINDIR" ]; then
+            echo "FAIL: julia-bindir output is empty"
+            exit 1
+          fi
+          echo "PASS: julia-bindir=$JULIA_BINDIR"
+      - name: Assert julia is on PATH and functional
+        run: |
+          which julia || { echo "FAIL: julia not found on PATH"; exit 1; }
+          RESULT=$(julia -e 'println(VERSION)')
+          echo "Julia VERSION: $RESULT"
+          if [ -z "$RESULT" ]; then
+            echo "FAIL: could not get Julia VERSION"
+            exit 1
+          fi
+          echo "PASS: julia LTS is functional"

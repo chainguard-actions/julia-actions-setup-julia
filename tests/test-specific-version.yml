@@ -1,0 +1,45 @@
+name: Test specific version installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: setup
+        uses: .
+        with:
+          version: '1.10'
+      - name: Assert julia-version output matches 1.10.x
+        env:
+          JULIA_VERSION: ${{ steps.setup.outputs.julia-version }}
+        run: |
+          echo "julia-version: $JULIA_VERSION"
+          if [ -z "$JULIA_VERSION" ]; then
+            echo "FAIL: julia-version output is empty"
+            exit 1
+          fi
+          if ! echo "$JULIA_VERSION" | grep -qE '^1\.10\.'; then
+            echo "FAIL: expected julia-version to start with '1.10.' but got: $JULIA_VERSION"
+            exit 1
+          fi
+          echo "PASS: julia-version=$JULIA_VERSION"
+      - name: Assert julia binary reports correct version
+        run: |
+          ACTUAL_VERSION=$(julia --version)
+          echo "julia --version: $ACTUAL_VERSION"
+          if ! echo "$ACTUAL_VERSION" | grep -qE '1\.10\.'; then
+            echo "FAIL: expected julia 1.10.x but got: $ACTUAL_VERSION"
+            exit 1
+          fi
+          echo "PASS: julia version matches 1.10.x"
+      - name: Assert julia-bindir contains julia executable
+        env:
+          JULIA_BINDIR: ${{ steps.setup.outputs.julia-bindir }}
+        run: |
+          echo "julia-bindir: $JULIA_BINDIR"
+          if [ ! -f "$JULIA_BINDIR/julia" ]; then
+            echo "FAIL: julia executable not found in bindir: $JULIA_BINDIR"
+            exit 1
+          fi
+          echo "PASS: julia executable found in bindir"
