@@ -1,0 +1,74 @@
+name: Example builds (nightly)
+
+concurrency:
+  # Skip intermediate builds: all builds except for builds on the `master`, `main`, or `release-*` branches
+  # Cancel intermediate builds: only pull request builds
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref != 'refs/heads/master' || github.ref != 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-') || github.run_number }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+on:
+  push:
+    branches: ['main', 'master', 'releases/*']
+  pull_request:
+  schedule:
+    - cron: '37 17 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version:
+          - nightly
+          - 1.13-nightly
+        julia-wordsize:
+          - 64
+          - 32
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-15-intel # Intel
+          - macos-latest # Apple Silicon
+        # 32-bit Julia binaries are not available on macOS
+        exclude:
+          - os: macos-15-intel # Intel
+            julia-wordsize: 32
+          - os: macos-latest # Apple Silicon
+            julia-wordsize: 32
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: ${{ ! startsWith(github.ref, 'refs/heads/releases') }}
+        with:
+          node-version-file: '.tool-versions'
+
+      - name: "Install dependencies"
+        if: ${{ ! startsWith(github.ref, 'refs/heads/releases') }}
+        run: |
+          npm install
+          npm run build
+          npm run pack
+
+      - name: "Set up Julia (${{ matrix.julia-version }})"
+        uses: ./
+        with:
+          version: ${{ matrix.julia-version }}
+          # If `julia-wordsize` is 32, then we set `arch` to `x86`, because we know that
+          # 32-bit builds of Julia are only available for x86.
+          #
+          # If `julia-wordsize` is 64, then we set `arch` to `${{ runner.arch }}`, which
+          # GitHub will automatically expand to the correct value (`x86_64` or `aarch64`)
+          # based on the architecture of the underlying GitHub Runner (virtual machine).
+          arch: ${{ matrix.julia-wordsize == '32' && 'x86' || runner.arch }}
+
+      - run: julia --version
+      - run: julia --compile=min -O0 -e 'import InteractiveUtils; InteractiveUtils.versioninfo()'
+      - name: "Check that the correct julia is used and that archive mtimes are maintained"
+        run: julia --startup-file=no --color=yes ./.github/scripts/common-tests.jl
