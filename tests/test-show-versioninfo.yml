@@ -1,0 +1,32 @@
+name: Test show-versioninfo option
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: setup
+        uses: .
+        with:
+          version: '1'
+          show-versioninfo: 'true'
+      - name: Assert julia-version output is set
+        env:
+          JULIA_VERSION: ${{ steps.setup.outputs.julia-version }}
+        run: |
+          echo "julia-version: $JULIA_VERSION"
+          if [ -z "$JULIA_VERSION" ]; then
+            echo "FAIL: julia-version output is empty"
+            exit 1
+          fi
+          echo "PASS: julia-version=$JULIA_VERSION"
+      - name: Assert julia is functional after versioninfo display
+        run: |
+          OUTPUT=$(julia -e 'println("hello from julia")')
+          echo "julia output: $OUTPUT"
+          if [ "$OUTPUT" != "hello from julia" ]; then
+            echo "FAIL: expected 'hello from julia', got: $OUTPUT"
+            exit 1
+          fi
+          echo "PASS"
