@@ -1,0 +1,35 @@
+name: Test specific Julia version (1.10)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: setup
+        uses: .
+        with:
+          version: '1.10'
+      - name: Assert julia-version starts with 1.10
+        env:
+          JULIA_VERSION: ${{ steps.setup.outputs.julia-version }}
+        run: |
+          echo "julia-version: $JULIA_VERSION"
+          if [ -z "$JULIA_VERSION" ]; then
+            echo "FAIL: julia-version output is empty"
+            exit 1
+          fi
+          if ! echo "$JULIA_VERSION" | grep -qE '^1\.10\.'; then
+            echo "FAIL: expected version starting with 1.10, got $JULIA_VERSION"
+            exit 1
+          fi
+          echo "PASS: julia-version=$JULIA_VERSION"
+      - name: Assert julia binary reports 1.10.x
+        run: |
+          ACTUAL=$(julia --version)
+          echo "julia --version: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -qE '1\.10\.'; then
+            echo "FAIL: expected julia 1.10.x, got: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS"
